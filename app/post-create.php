@@ -2,20 +2,15 @@
 /*
 	Question2Answer by Gideon Greenspan and contributors
 	http://www.question2answer.org/
-
 	Description: Creating questions, answers and comments (application level)
-
-
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
 	as published by the Free Software Foundation; either version 2
 	of the License, or (at your option) any later version.
-
 	This program is distributed in the hope that it will be useful,
 	but WITHOUT ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU General Public License for more details.
-
 	More about this license: http://www.question2answer.org/license.php
 */
 
@@ -84,17 +79,10 @@ function qa_question_create($followanswer, $userid, $handle, $cookieid, $title, 
 
 	if ($queued) {
 		qa_db_queuedcount_update();
-
 	} else {
 		qa_post_index($postid, 'Q', $postid, @$followanswer['postid'], $title, $content, $format, $text, $tagstring, $categoryid);
-		qa_update_counts_for_q($postid);
+		qa_update_counts_for_q($postid, 1);
 		qa_db_points_update_ifuser($userid, 'qposts');
-        
-        
-       //comment ve answer den gelen hesaplamalar
-        //qa_db_points_update_ifuser($userid, 'cposts');
-        
-        //qa_db_points_update_ifuser($userid, 'aposts');
 	}
 
 	qa_report_event($queued ? 'q_queue' : 'q_post', $userid, $handle, $cookieid, array(
@@ -116,27 +104,25 @@ function qa_question_create($followanswer, $userid, $handle, $cookieid, $title, 
 	return $postid;
 }
 
-
 /**
- * Perform various common cached count updating operations to reflect changes in the question whose id is $postid
+ * Perform various common cached count updating operations to reflect changes in the question whose id is $postid. The $difference
+ * representes the amount of change (positive or negative) that the cache value will experience. If the $difference is null then a
+ * full recalculation of the cache value is executed.
  * @param $postid
+ * @param int|null $difference
  */
-function qa_update_counts_for_q($postid)
+function qa_update_counts_for_q($postid, $difference)
 {
-	if (isset($postid)) // post might no longer exist
+	if (isset($postid)) { // post might no longer exist
 		qa_db_category_path_qcount_update(qa_db_post_get_category_path($postid));
+	}
 
-	qa_db_qcount_update();
-	qa_db_unaqcount_update();
-	qa_db_unselqcount_update();
-	qa_db_unupaqcount_update();
+	qa_db_qcount_update($difference);
+	qa_db_unaqcount_update($difference);
+	qa_db_unselqcount_update($difference);
+	qa_db_unupaqcount_update($difference);
+
 	qa_db_tagcount_update();
-    
-    
-    //from qa_db_ccount_update and qa_db_acount_update functions
-    qa_db_acount_update();
-    qa_db_ccount_update();
-    
 }
 
 
@@ -260,11 +246,11 @@ function qa_answer_create($userid, $handle, $cookieid, $content, $format, $text,
  */
 function qa_update_q_counts_for_a($questionid)
 {
-	qa_db_post_acount_update($questionid);
-	//qa_db_hotness_update($questionid);
-	//qa_db_acount_update();
-	//qa_db_unaqcount_update();
-	//qa_db_unupaqcount_update();
+	// qa_db_post_acount_update($questionid);
+	// qa_db_hotness_update($questionid);
+	// qa_db_acount_update();
+	// qa_db_unaqcount_update();
+	// qa_db_unupaqcount_update();
 }
 
 
@@ -314,8 +300,8 @@ function qa_comment_create($userid, $handle, $cookieid, $content, $format, $text
 			qa_post_index($postid, 'C', $question['postid'], $parent['postid'], null, $content, $format, $text, null, $question['categoryid']);
 		}
 
-//		qa_db_points_update_ifuser($userid, 'cposts');
-//		qa_db_ccount_update();
+		qa_db_points_update_ifuser($userid, 'cposts');
+		//qa_db_ccount_update();
 	}
 
 	$thread = array();
